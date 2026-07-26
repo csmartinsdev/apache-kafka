@@ -17,7 +17,8 @@ services:
       - "host.docker.internal:172.17.0.1"
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    image: confluentinc/cp-kafka:6.0.0
     depends_on:
       - zookeeper
     ports:
