@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
@@ -17,7 +18,7 @@ func newKafkaProducer() *kafka.Producer {
 
 	producer, err := kafka.NewProducer(configMap)
 	if err != nil {
-		panic(err)
+		log.Println(err.Error())
 	}
 
 	return producer
