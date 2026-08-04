@@ -8,11 +8,24 @@ import (
 )
 
 func main() {
-	topic := "fullcycle-trilha-kafka"
+	deliveryChannel := make(chan kafka.Event)
+	topic := "FULLCYCLE-Trilha-Kafka"
 
 	producer := newKafkaProducer()
-	Publish("Hello, Kafka!", topic, producer, nil)
-	producer.Flush(15 * 1000)
+	Publish("Hello, Kafka!", topic, producer, nil, deliveryChannel)
+
+	event := <-deliveryChannel
+	message := event.(*kafka.Message)
+
+	if message.TopicPartition.Error != nil {
+		log.Printf("Failed to deliver message: %v\n", message.TopicPartition.Error)
+		return
+	}
+
+	log.Printf("Topic:(%s |Partition:[%d] |Offset %v)\n",
+		*message.TopicPartition.Topic, message.TopicPartition.Partition, message.TopicPartition.Offset)
+
+	producer.Flush(1000)
 
 }
 
@@ -28,14 +41,14 @@ func newKafkaProducer() *kafka.Producer {
 
 	return producer
 }
-func Publish(msg string, topic string, producer *kafka.Producer, key []byte) error {
+func Publish(msg string, topic string, producer *kafka.Producer, key []byte, deliveryChannel chan kafka.Event) error {
 	message := &kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          []byte(msg),
 		Key:            key,
 	}
 
-	err := producer.Produce(message, nil)
+	err := producer.Produce(message, deliveryChannel)
 	if err != nil {
 		return fmt.Errorf("failed to produce message: %v", err)
 	}
