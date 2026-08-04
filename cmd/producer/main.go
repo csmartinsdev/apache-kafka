@@ -12,21 +12,9 @@ func main() {
 	topic := "FULLCYCLE-Trilha-Kafka"
 
 	producer := newKafkaProducer()
-	Publish("Hello, Kafka!", topic, producer, nil, deliveryChannel)
-
-	event := <-deliveryChannel
-	message := event.(*kafka.Message)
-
-	if message.TopicPartition.Error != nil {
-		log.Printf("Failed to deliver message: %v\n", message.TopicPartition.Error)
-		return
-	}
-
-	log.Printf("Topic:(%s |Partition:[%d] |Offset %v)\n",
-		*message.TopicPartition.Topic, message.TopicPartition.Partition, message.TopicPartition.Offset)
-
-	producer.Flush(1000)
-
+	Publish("BOL $ 30.0", topic, producer, nil, deliveryChannel)
+	go DeliveryReportHandler(deliveryChannel) // go executar em uma thread separada, para não travar o fluxo do programa | Async
+	producer.Flush(5 * 1000)                  // Flush: aguarda a entrega de todas as mensagens pendentes antes de encerrar o produtor
 }
 
 func newKafkaProducer() *kafka.Producer {
@@ -54,4 +42,19 @@ func Publish(msg string, topic string, producer *kafka.Producer, key []byte, del
 	}
 
 	return nil
+}
+
+func DeliveryReportHandler(deliveryChannel chan kafka.Event) {
+	for event := range deliveryChannel {
+		switch ev := event.(type) {
+		case *kafka.Message:
+			if ev.TopicPartition.Error != nil {
+				log.Printf("Failed to deliver message: %v\n", ev.TopicPartition.Error)
+			}
+
+			if ev.TopicPartition.Error == nil {
+				log.Printf("Topic:(%s |Partition:[%d] |Offset %v)\n", *ev.TopicPartition.Topic, ev.TopicPartition.Partition, ev.TopicPartition.Offset)
+			}
+		}
+	}
 }
