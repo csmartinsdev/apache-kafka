@@ -12,14 +12,16 @@ func main() {
 	topic := "FULLCYCLE-Trilha-Kafka"
 
 	producer := newKafkaProducer()
-	Publish("BOL $ 30.0", topic, producer, nil, deliveryChannel)
+	Publish("Mensage Topico Kafka - key: transferencia 2", topic, producer, []byte("transferencia 2"), deliveryChannel)
 	go DeliveryReportHandler(deliveryChannel) // go executar em uma thread separada, para não travar o fluxo do programa | Async
 	producer.Flush(5 * 1000)                  // Flush: aguarda a entrega de todas as mensagens pendentes antes de encerrar o produtor
 }
 
 func newKafkaProducer() *kafka.Producer {
 	configMap := &kafka.ConfigMap{
-		"bootstrap.servers": "kafka:9092",
+		"bootstrap.servers":  "kafka:9092",
+		"acks":               "all",
+		"enable.idempotence": true,
 	}
 
 	producer, err := kafka.NewProducer(configMap)
